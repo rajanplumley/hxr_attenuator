@@ -1,10 +1,14 @@
 import requests
 import numpy as np
 import sys
-##############################################################################
+
+# Grabs LBNL CXRO atomic scattering factor data tables from their website and writes to numpy array files.
+
+# Usage: python request_factors.py <elemental formula>
+
 formula = sys.argv[1]
 url = 'http://henke.lbl.gov/optical_constants/sf/'+formula.lower()+'.nff'
-newfile = './scattering_factors/'+formula.lower()+'.npy'
+newfile = '../scattering_factors/'+formula.lower()+'.npy'
 
 print("Downloading atomic scattering factor file for {0} from {1}".format(formula, url))
 q = requests.get(url)
