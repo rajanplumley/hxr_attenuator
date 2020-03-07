@@ -1,15 +1,26 @@
+import logging
+import time
 import numpy as np
 import matplotlib as plt
 import itertools
+# from ophyd.device import Component as Cpt
+# from ophyd.device import FormattedComponent as FCpt
+# from ophyd.pv_positioner import PVPositioner
+# from ophyd.signal import Signal, EpicsSignal, EpicsSignalRO
 
-class satt:
+# from pcdsdevices.inout import InOutPositioner
+# from pcdsdevices.mv_interface import FltMvInterface
+
+logger = logging.getLogger(__name__)
+
+class Satt:
     """
     Solid attenuator system.  A sequence of x-ray filters for reduction of XFEL pulse intensity.
     Each filter, or 'blade', can occupy two states: '1' for in, or '0' for out.
     
     Filter objects are accessible via the `blade()` method.
     """ 
-    def __init__(self, filters, eV = None):
+    def __init__(self, filters, eV=None):
         self.filters = filters
         self.N_filters = len(filters)
         self.config = self._config()
@@ -120,7 +131,6 @@ class satt:
         self.eV = eV
         self.T_lookup_table = self._create_lookup(self.eV)
         
-        
     def set_attenuation(self, T_desired, eV=None):
         """
         Find and set the configuration that has transmission closest (upper bound)
@@ -140,7 +150,8 @@ class satt:
             self._reset_blades()
             self.set_config(new_config)
 
-class filter:
+
+class Filter:
     def __init__(self, formula, d, index, h5file):
         self.formula = formula # chemical formula
         self.d = d # filter thickness
@@ -198,3 +209,74 @@ class filter:
             return True
         else:
             return False
+
+
+
+# class HXRFilter(InOutPositioner):
+#     """
+#     A single attenuation blade.
+#     """
+
+#     state = Cpt(EpicsSignal, ':STATE:', write_pv='GO', kind='hinted')
+#     velo = Cpt(EpicsSignal, 'VELO', kind='hinted')
+#     setpoint = Cpt(EpicsSignal, 'SETPOINT', kind='hinted')
+# #    stuck = Cpt(EpicsSignal, 'STUCK', kind='hinted')
+#     states_list = ['IN', 'OUT', 'UNKOWN']
+    
+#     # def __init__(self, prefix, name, formula, d, index, h5file, **kwargs):
+#     #     self.formula = formula # chemical formula
+#     #     self.d = d # filter thickness
+#     #     self.index = index 
+#     #     self.constants, self._table = self.load_data(h5file)
+#     #     self.Z = int(self.constants[0]) # atomic number
+#     #     self.A = self.constants[1] # atomic weight [g]
+#     #     self.p = self.constants[2] # density [g/cm^3]
+#     #     self.table = self._T_table()
+#     #     super().__init__(prefix, name=name, **kwargs)
+        
+#     def load_data(self, h5file):
+#         """
+#         Loads HDF5 physics data into tables.
+#         """
+#         self.table = np.asarray(h5file['{}_scatter_table'.format(self.formula)])
+#         self.constants = np.asarray(h5file['{}_constants'.format(self.formula)])
+#         return self.constants, self.table
+    
+#     def _T_table(self):
+#         """
+#         Creates table of transmissions based on filter thickness `d`.
+#         """
+#         t_table = np.zeros([self._table.shape[0],2])
+#         for i in range(self._table.shape[0]):
+#             t_table[i] = self._table[i,0], np.exp(-self._table[i,2]*self.d*10) 
+#         self.T_table = t_table
+#         return self.T_table
+        
+#     def plot_T(self, xmin=0, xmax=8000):
+#         """
+#         Plot this filter's transmission vs photon energy.
+#         """
+#         plt.plot(self.T_table[:,0],self.T_table[:,1], c='black', linewidth=0.7)
+#         plt.ylabel("Transmission")
+#         plt.xlabel("Photon Energy (eV)")
+#         plt.xlim(xmin,xmax)
+#         plt.title("{0}(Z = {1}): {2}um thickness".format(self.formula, self.Z, self.d*1E6))
+        
+#     def get_vals(self, eV):
+#         """
+#         Return closest photon energy to eV and its transmission
+#         """
+#         T  = np.nan
+#         closest_eV = (min(self.T_table[:,0], key=lambda data_eV:abs(data_eV-eV)))
+#         i = np.argwhere(self.T_table[:,0]==closest_eV).flatten()[0]
+#         eV, T = self.T_table[i]
+#         return closest_eV, T
+    
+#     def is_in(self):
+#         """
+#         Filter state as a boolean.
+#         """
+#         if int(self.state) == 1:
+#             return True
+#         else:
+#             return False
