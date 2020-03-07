@@ -120,11 +120,11 @@ def abs_data(material, eV_range):
     return table
 
 
-def gen_table(data_dict, eV_range=(1000,25000), res=10, dec=2):
+def gen_table(data_dicts, eV_range=(1000,25000), res=10, dec=2):
     h5 = h5py.File('./absorption_data.h5','w')
-    for data in data_dict:
+    for data in data_dicts:
         element = data.get('formula')
-        table = abs_data(element, eV_range)
+        table = abs_data(data, eV_range)
         data_table = h5.create_dataset('{}_table'.format(element),
                                         table.shape,
                                         dtype='f')
@@ -135,5 +135,8 @@ def gen_table(data_dict, eV_range=(1000,25000), res=10, dec=2):
         data_consts[0] = data.get('atomic_number')
         data_consts[1] = data.get('atomic_weight')
         data_consts[2] = data.get('density')
-    out.close()
+    h5.close()
 
+
+if __name__ == '__main__':
+    gen_table(data_dicts)
