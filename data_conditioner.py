@@ -67,9 +67,6 @@ def eV_linear(eV_range, res=10, dec=2):
 
     Parameters:
     ---------------
-    element : ``str``
-       Formula of the element to open e.g. "Si", "si", "C", "Au"
-
     eV_range : ``tuple``
        Upper and lower bounds of photon energy range. 
 
