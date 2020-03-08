@@ -5,7 +5,7 @@ import h5py
 """
 Program for populating photoabsorption datasets for
 X-FEL solid attenuator transmission calculations using
-public data availabe from LBNL CRXO.
+public data availabe from LBNL CXRO.
 
 REFERENCES:
 ----------------
