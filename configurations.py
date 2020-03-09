@@ -19,10 +19,10 @@ def in_out_attenuator(N):
 def write_h5(config_table):
     """
     Write the configurations set into an HDF5 file.
-    
+ 
     Parameters:
        config_table : ``NumPy Array``
-    
+
     """
     h5 = h5py.File('configs.h5', 'w')
     configs = h5.create_dataset('configurations', (len(config_table),N,), dtype='f')
@@ -34,6 +34,3 @@ if __name__ == '__main__':
     if kind == 'inout':
         config_table = in_out_attenuator(N)
         write_h5(config_table)
-        
-
-
