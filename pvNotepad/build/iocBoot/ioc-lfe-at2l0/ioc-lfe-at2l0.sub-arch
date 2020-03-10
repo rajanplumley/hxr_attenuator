@@ -1,6 +1,11 @@
 file archive_record.tpl-arch
 {
     pattern { RECORD                 }
+            { LCLS:HXR:BEAM:EV    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
             { AT2L0:XTES:FILTER:01:THICKNESS    }
 }
 file archive_record.tpl-arch

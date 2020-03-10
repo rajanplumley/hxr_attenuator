@@ -20,8 +20,8 @@ TARGETS = envPaths
 # Make sure these archive files are fully expanded
 USR_ARCHIVEFLAGS += -V
 
-ARCHIVE += ioc-xtes-at2l0.archive
-REQ += ioc-xtes-at2l0.req
+ARCHIVE += ioc-lfe-at2l0.archive
+REQ += ioc-lfe-at2l0.req
 
 include $(TOP)/configure/RULES.ioc
 -include $(TOP)/configure/RULES.archive

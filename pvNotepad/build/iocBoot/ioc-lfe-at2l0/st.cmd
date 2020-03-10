@@ -1,9 +1,9 @@
 #!/reg/g/pcds/package/epics/3.14/ioc/common/pvNotepad/R1.3.1/bin/rhel7-x86_64/pvNotepad
 
-epicsEnvSet( "EPICS_NAME", "IOC:XTES:AT2L0" )
+epicsEnvSet( "EPICS_NAME", "IOC:LFE:AT2L0" )
 epicsEnvSet( "ENGINEER",  "Rajan Plumley (rajan-01)" )
 epicsEnvSet( "LOCATION",  "SLAC:LCLS:FEE:LFE" )
-epicsEnvSet( "IOCSH_PS1", "ioc-xtes-at2l0> ")
+epicsEnvSet( "IOCSH_PS1", "ioc-lfe-at2l0> ")
 
 < envPaths
 
@@ -20,6 +20,7 @@ dbLoadRecords("$(TOP)/db/save_restoreStatus.db", "IOC=$(EPICS_NAME)" )
 
 #Standard array option
 
+dbLoadRecords("$(TOP)/db/specials.db",     "PV=LCLS:HXR:BEAM:EV,RECTYPE=ao")
 dbLoadRecords("$(TOP)/db/specials.db",     "PV=AT2L0:XTES:FILTER:01:THICKNESS,RECTYPE=ao")
 dbLoadRecords("$(TOP)/db/specials.db",     "PV=AT2L0:XTES:FILTER:02:THICKNESS,RECTYPE=ao")
 dbLoadRecords("$(TOP)/db/specials.db",     "PV=AT2L0:XTES:FILTER:03:THICKNESS,RECTYPE=ao")
@@ -76,17 +77,17 @@ save_restoreSet_IncompleteSetsOk( 1 )
 save_restoreSet_DatedBackupFiles( 1 )
 
 set_requestfile_path( "$(PWD)/../../autosave"             )
-set_savefile_path   ( "$(IOC_DATA)/ioc-xtes-at2l0/autosave" )
+set_savefile_path   ( "$(IOC_DATA)/ioc-lfe-at2l0/autosave" )
 
-set_pass0_restoreFile( "ioc-xtes-at2l0.sav" )        #just restore the settings
-set_pass1_restoreFile( "ioc-xtes-at2l0.sav" )        #just restore the settings
+set_pass0_restoreFile( "ioc-lfe-at2l0.sav" )        #just restore the settings
+set_pass1_restoreFile( "ioc-lfe-at2l0.sav" )        #just restore the settings
 
 
 # Initialize the IOC and start processing records
 iocInit()
 
 # Start autosave backups
-create_monitor_set( "ioc-xtes-at2l0.req", 30, "" )
+create_monitor_set( "ioc-lfe-at2l0.req", 30, "" )
 
 # All IOCs should dump some common info after initial startup.
 < /reg/d/iocCommon/All/post_linux.cmd

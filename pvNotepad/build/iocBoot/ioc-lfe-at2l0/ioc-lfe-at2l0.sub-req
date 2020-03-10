@@ -2,6 +2,11 @@
 file autosave_record.tpl-req
 {
     pattern { RECORD                 }
+            { LCLS:HXR:BEAM:EV    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
             { AT2L0:XTES:FILTER:01:THICKNESS    }
 }
 file autosave_record.tpl-req

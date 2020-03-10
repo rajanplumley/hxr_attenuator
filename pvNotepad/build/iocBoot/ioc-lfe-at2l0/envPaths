@@ -1,4 +1,4 @@
-epicsEnvSet("IOC","ioc-cxi-cspadPV")
+epicsEnvSet("IOC","ioc-lfe-at2l0")
 epicsEnvSet("TOP","/reg/g/pcds/package/epics/3.14/ioc/common/pvNotepad/R1.3.1")
 epicsEnvSet("EPICS_SITE_TOP","/reg/g/pcds/epics")
 epicsEnvSet("BASE_SITE_TOP","/reg/g/pcds/epics/base")
