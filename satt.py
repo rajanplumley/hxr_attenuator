@@ -8,7 +8,7 @@ from pcdsdevices.inout import TwinCATInOutPositioner
 logger = logging.getLogger(__name__)
 
 
-class HXRFilter(Device):
+aclass HXRFilter(Device):
     """
     A single attenuation blade.
 
@@ -29,7 +29,9 @@ class HXRFilter(Device):
     thickness = FCpt(EpicsSignalRO,
                      '{prefix}:FILTER:{self.index_str}:THICKNESS',
                      kind='hinted')
-
+    is_stuck = FCpt(EpicsSignalRO,
+                     '{prefix}:FILTER:{self.index_str}:IS_STUCK',
+                     kind='hinted')
     tab_whitelist = ['inserted', 'removed', 'insert', 'remove', 'transmission']
     
     def __init__(self,
@@ -46,6 +48,7 @@ class HXRFilter(Device):
         self.A = self.atomic_weight = self.constants[1] # atomic weight [g]
         self.p = self.density = self.constants[2] # density [g/cm^3]
         self.d = self.thickness.get()
+        self.is_stuck = self.is_stuck()
 
     def load_data(self, h5file):
         """
@@ -88,23 +91,39 @@ class HXRFilter(Device):
         True if filter is removed (out).
         """
         return self.blade.removed
-
+    
+    @property
+    def is_stuck(self):
+        """
+        True if filter has been set as stuck.
+        Unable to move.  Hopefully retracted.
+        """
+        return self.is_stuck.get()
 
 class HXRSatt(Device):
     """
     """
-    
+    cbid = None
     tab_component_names = True
     tab_whitelist = []
-
-
-    def __init__(self, prefix, eV=None, name='HXRSatt', **kwargs):
+    
+    eV = FCpt(EpicsSignalRO, '{self.eV_prefix}', kind='hinted')
+    
+    def __init__(self, prefix, eV_prefix="LCLS:HXR:BEAM:EV",
+                 name='HXRSatt', **kwargs):
         super().__init__(prefix, name=name, **kwargs)
 
-    def startup(self):
+    def _startup(self):
+        """
+        Connect to PVs in order to generate
+        information about filter configurations
+        and photon energy.
+        """
         self.N_filters = len(self.filters)
-        self.config = self._curr_config()
+        self.config_arr = self._curr_config_arr()
         self.config_table = self._load_configs()
+        self.eV_RBV = eV.get()
+        self.eV.subscribe(self.eV_callback)
 
     def blade(self, index):
         """
@@ -117,7 +136,7 @@ class HXRSatt(Device):
         Insert filter at `index`.
         """
         inserted = self.blade(index).insert()
-        self._curr_config()
+        self._curr_config_arr()
         return inserted
     
     def remove(self, index):
@@ -125,51 +144,63 @@ class HXRSatt(Device):
         Insert filter at `index`.
         """
         removed = self.blade(index).remove()
-        self._curr_config()
+        self._curr_config_arr()
         return removed
-
+    
+    def config(self):
+        config_dict = {}
+        for x in self.config_arr:
+            if x == 1:
+                state = 'IN'
+            else:
+                state = 'OUT'
+            config_dict.update({str(i+1) : state})
+        self.config = config_dict
+        
     def _load_configs(self):
-        self._config_table = self.configs['configurations']
-        return self._config_table
+        self.config_table = self.configs['configurations']
+        return self.config_table
 
-    def _curr_config(self):
+    def _curr_config_arr(self):
         """
         Return the configuration of filter states.
         """
-        config = {}
-        for f in self.filters:
-            if self.filters.get(f).inserted():
-                state = 1
-            elif self.filters.get(f).removed():
-                state = np.nan
-                _curr_config.update({f : state})
+        config = np.ones(self.N_filters)
+        for i in range(self.N_filters):
+            if self.blade(i+1).inserted():
+                config[i] = 1
+            else:
+                config[i] = np.nan
+        self.config_arr = config
         return config
 
-    def _total_T(self, eV):
+    def _all_transmissions(self, eV):
         """
         Calculates and returns transmission at
-        photon energy `eV` given an arbitrary configuration.
+        photon energy ``eV`` for all non-stuck filters.
         """
         T_arr = np.ones(self.N_filters)
         for i in range(self.N_filters):
-            T_arr[i] = self.blade(i+1).transmission(eV)
+            if self.blade(i+1).is_stuck():
+                T_arr = np.nan
+            else:
+                T_arr[i] = self.blade(i+1).transmission(eV)
         return T_arr
 
-    def T(self, eV=None):
+    def curr_transmission(self, eV):
         """
         Calculates and returns transmission at 
-        photon energy `eV` through current filter configuration.
+        photon energy ``eV`` through current filter configuration.
         """
-        if not eV and not self.eV:
-            print("Photon energy not set.  Transmission undefined")
-            return np.nan
-        else:
-            if not eV:
-                eV = self.eV
-        return self._calc_T(eV, self._curr_config)
+        return np.nanprod(
+            self._all_transmissions(eV)*self._curr_config())
 
-    def eV_callback(self):
-        pass
+    def eV_callback(self, value=None, **kwargs):
+        """
+        To be run every time the ``eV`` signal changes.
+        """
+        self.eV_RBV = value
+        self.transmission = self.curr_transmission(value)
 
     def attenuate(self):
         pass
@@ -179,48 +210,47 @@ class AT2L0(HXRSatt):
     absorption_data = h5py.File('absorption_data.h5', 'r')
     configs = h5py.File('configs.h5', 'r')
 
-    f00 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+    f01 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
              index=1, kind='normal')
-    f01 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=2, kind='normal')
     f02 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=3, kind='normal')
+             index=2, kind='normal')
     f03 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=3, kind='normal')
+    f04 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=4, kind='normal')
-    f04 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+    f05 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
              index=5, kind='normal')
-    f05 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=6, kind='normal')
     f06 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=7, kind='normal')
+             index=6, kind='normal')
     f07 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=7, kind='normal')
+    f08 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=8, kind='normal')
-    f08 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+    f09 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
              index=9, kind='normal')
-    f09 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=10, kind='normal')
     f10 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=11, kind='normal')
+             index=10, kind='normal')
     f11 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=11, kind='normal')
+    f12 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=12, kind='normal')
-    f12 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+    f13 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
              index=13, kind='normal')
-    f13 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=14, kind='normal')
     f14 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
-             index=15, kind='normal')
+             index=14, kind='normal')
     f15 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=15, kind='normal')
+    f16 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=16, kind='normal')
-    f16 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+    f17 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
              index=17, kind='normal')
-    f17 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+    f18 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=18, kind='normal')
 
     def __init__(self, prefix, name='at2l0', **kwargs):
         self.prefix = prefix
         super().__init__(prefix, name=name, **kwargs)
         self.filters = {
-            str(self.f00.index) : self.f00,
             str(self.f01.index) : self.f01,
             str(self.f02.index) : self.f02,
             str(self.f03.index) : self.f03,
@@ -238,9 +268,10 @@ class AT2L0(HXRSatt):
             str(self.f15.index) : self.f15,
             str(self.f16.index) : self.f16,
             str(self.f17.index) : self.f17,
+            str(self.f18.index) : self.f18,
         }
-        self.N_filters = len(self.filters)
-        self.config_table = self._load_configs()
-#        super().startup() # this will try to connect to motor signals
+        self.N_filters = len(self.filters) # temporary hacks to skip motor signals
+        self.config_table = self._load_configs() #
+#        super()._startup() # this will try to connect to motor signals
 
 
