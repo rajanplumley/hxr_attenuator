@@ -1,0 +1,245 @@
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:01:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:02:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:03:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:04:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:05:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:06:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:07:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:08:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:09:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:10:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:11:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:12:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:13:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:14:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:15:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:16:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:17:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:18:THICKNESS    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:01:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:02:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:03:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:04:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:05:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:06:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:07:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:08:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:09:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:10:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:11:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:12:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:13:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:14:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:15:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:16:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:17:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:18:MATERIAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_ACTUAL    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_HIGH    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_LOW    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_DESIRED    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_3OMEGA    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:ENERGY    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:LOCKED    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:UNLOCK    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:MOVING    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:RUN    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:SET_MODE    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:MIRROR_IN    }
+}
+file archive_record.tpl-arch
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:CONFIG    }
+}

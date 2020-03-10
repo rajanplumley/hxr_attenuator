@@ -1,5 +1,6 @@
 import logging
 from ophyd.device import Device, Component as Cpt, FormattedComponent as FCpt
+from ophyd import EpicsSignal, EpicsSignalRO
 import numpy as np
 import h5py
 from pcdsdevices.inout import TwinCATInOutPositioner
@@ -7,7 +8,7 @@ from pcdsdevices.inout import TwinCATInOutPositioner
 logger = logging.getLogger(__name__)
 
 
-class HXRFilter(TwinCATInOutPositioner):
+class HXRFilter(Device):
     """
     A single attenuation blade.
 
@@ -15,59 +16,60 @@ class HXRFilter(TwinCATInOutPositioner):
     -----------
     prefix : ``str``
     filter_data : ``file``
-    formula : ``str``
-    thickness : ``str``
     index : ``int``
     """
     _transmission = {} # TODO: this would be good to be dynamically set.
+    # TODO: Implement an ENABLED/ALLOWED signal    
+
+    blade = FCpt(TwinCATInOutPositioner,
+                 '{prefix}:MMS:{self.index_str}', kind='normal')
+    material = FCpt(EpicsSignalRO,
+                    '{prefix}:FILTER:{self.index_str}:MATERIAL',
+                    string=True, kind='hinted')
+    thickness = FCpt(EpicsSignalRO,
+                     '{prefix}:FILTER:{self.index_str}:THICKNESS',
+                     kind='hinted')
 
     tab_whitelist = ['inserted', 'removed', 'insert', 'remove', 'transmission']
-
-    # TODO: Implement an ENABLED/ALLOWED signal
-
+    
     def __init__(self,
                  prefix,
-                 h5file,
-                 formula,
-                 thickness,
-                 index,
+                 h5file=None,
+                 index=None,
                  name='hxr_filter',
                  **kwargs):
-        self.formula = formula 
-        self.d = self.thickness = thickness
-        self.index = index # filter index (upstream to downstream)
+        self.index_str = f'{index}'.zfill(2)
+        self.index = index
+        super().__init__(prefix, name=name, **kwargs)
         self.constants, self._data = self.load_data(h5file) # These physical constants should not be mutable! 
         self.Z = self.atomic_number = int(self.constants[0]) # atomic number
         self.A = self.atomic_weight = self.constants[1] # atomic weight [g]
         self.p = self.density = self.constants[2] # density [g/cm^3]
+        self.d = 1
         self.table = self._T_table()
-#        super().__init__(prefix, name=name, **kwargs)
+        self.d = self.thickness.get()
 
-    def stage(self):
-        """
-        Save the original position to be restored on `unstage`.
-        """
-        self._original_vals[self.state] = self.state.value
-        return super().stage()
 
     def load_data(self, h5file):
         """
         Loads HDF5 physics data into tables.
         """
-        self.table = np.asarray(h5file['{}_table'.format(self.formula)])
-        self.constants = np.asarray(h5file['{}_constants'.format(self.formula)])
-        return self.constants, self.table
+        table = np.asarray(h5file['{}_table'.format(self.material.get())])
+        constants = np.asarray(h5file['{}_constants'.format(self.material.get())])
+        return constants, table
 
     def _T_table(self):
         """
         Creates table of transmissions based on filter thickness `d`.
         """
+        print('generating table for FILTER:{}...'.format(self.index_str))
         t_table = np.zeros([self._data.shape[0],2])
         for i in range(self._data.shape[0]):
             t_table[i] = self._data[i,0], np.exp(-self._data[i,2]*self.d*10) 
         self.T_table = t_table
+        print('done generating table for FILTER:{}!'.format(self.index_str))
         return self.T_table
-
+    
     def _closest_eV(self, eV):
         """
         Return the closest photon energy from the absorption data table.
@@ -95,52 +97,30 @@ class HXRFilter(TwinCATInOutPositioner):
         """
         True if filter is inserted (in).
         """
-        return super().inserted
+        return self.blade.inserted
 
     def removed(self):
         """
         True if filter is removed (out).
         """
-        return super().removed
+        return self.blade.removed
 
 
 class HXRSatt(Device):
     """
     """
-    absorption_data = h5py.File('absorption_data.h5', 'r')
-    configs = h5py.File('configs.h5', 'r')
     
     tab_component_names = True
     tab_whitelist = []
 
-    # some placehoders for testing and stuff
-    filters = {
-        '0' : Cpt(HXRFilter, 
-                  ':MMS:01',
-                  h5file=absorption_data,
-                  formula='C',
-                  thickness=10E-6,
-                  index=0,
-                  kind='normal'
-              ),
-        '1' : Cpt(HXRFilter, 
-                  ':MMS:02',
-                  h5file=absorption_data,
-                  formula='Si',
-                  thickness=10E-6,
-                  index=1,
-                  kind='normal'
-              )}
 
+    def __init__(self, prefix, eV=None, name='HXRSatt', **kwargs):
+        super().__init__(prefix, name=name, **kwargs)
 
-    def __init__(self, prefix, eV=None, name='HXRSatt'):
+    def startup(self):
         self.N_filters = len(self.filters)
         self.config = self._curr_config()
         self.config_table = self._load_configs()
-        self.eV = None
-        if eV:
-            self.set_eV(eV)
-        super().__init__(prefix, name=name, **kwargs)
 
     def blade(self, index):
         """
@@ -173,12 +153,12 @@ class HXRSatt(Device):
         Return the configuration of filter states.
         """
         config = {}
-        for f in self.filters:  # commented out because it can't access HXRFilter attributes..
-            # if self.filters.get(f).inserted(): # TODO: What if filter is in unknown state?
-            #     state = 1
-            # elif self.filters.get(f).removed():
-            #     state = np.nan
-            #     _curr_config.update({f : state})
+        for f in self.filters:
+            if self.filters.get(f).inserted():
+                state = 1
+            elif self.filters.get(f).removed():
+                state = np.nan
+                _curr_config.update({f : state})
         return config
 
     def _calc_T(self, eV, config):
@@ -207,79 +187,32 @@ class HXRSatt(Device):
     def eV_callback(self):
         pass
 
-        # old code
-    # def _calc_config(self, T_des, T_vals, eV=None):
-    #     """
-    #     """
-    #     new_config = {}
-    #     for f in self.filters:
-    #         new_config.update({ f : 0 })
+    def attenuate(self):
+        pass
 
-    #     best_hi = 0
-    #     best_lo = 0
-    #     best_config_lo = new_config
-    #     best_config_hi = new_config
+class AT2L0(HXRSatt):
 
-    #     if T_des <= 0:
-    #         return best_lo, best_hi, best_config_lo, best_config_hi
+    absorption_data = h5py.File('absorption_data.h5', 'r')
+    configs = h5py.File('configs.h5', 'r')
 
-    #     for f in self.filters:
-    #         new_config[f] = 1
-    #         new_T = self._calc_T(eV, new_config)
-    #         if new_T == T_des:
-    #             best_hi = best_lo = new_T
-    #             best_config_hi = best_config_lo = new_config
-    #             break
-    #         elif best_hi < T_des or (new_T < best_hi and new_T > T_des):
-    #             best_hi = new_T
-    #             best_config_hi = new_config
-    #         elif best_lo == 0 or best_lo > T_des or (new_T > best_lo and new_T < T_des):
-    #             best_lo = new_T
-    #             best_config_lo = new_config
-    #         if new_T > T_des:
-    #             new_config.update({ f : 0})
-    #             pass
-            
-            
-    # def _create_lookup(self, eV):
-    #     """
-    #     Find all possible configurations and calculate
-    #     their transmissions at photon energy `eV`.
-    #     """
-    #     dtype=[('config',int),('T',float)]
-    #     data = []
-    #     configs = map(list, itertools.product([0, 1], repeat=self.N_filters))
-    #     for i in range(2**self.N_filters):
-    #         pair = (configs[i], self._calc_T(eV, configs[i], self.filters))
-    #         data.append(pair)
-    #     self.T_lookup_table = sorted(data, key=lambda x: x[1])
-    #     return np.asarray(self.T_lookup_table)
+    f0 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+             index=1, kind='normal')
+    f1 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=2, kind='normal')
+    f2 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=3, kind='normal')
+    f3 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=4, kind='normal')
 
-    
-    # def set_eV(self, eV):
-    #     """
-    #     Sets the working photon energy and creates 
-    #     a transmission lookup table.
-    #     """
-    #     self.eV = eV
-    #     self.T_lookup_table = self._create_lookup(self.eV)
+    def __init__(self, prefix, name='at2l0', **kwargs):
+        self.prefix = prefix
+        super().__init__(prefix, name=name, **kwargs)
+        self.filters = {
+            str(self.f0.index) : self.f0,
+            str(self.f1.index) : self.f1,
+            str(self.f2.index) : self.f2,
+            str(self.f3.index) : self.f3
+        }
+#        super().startup() # this will try to connect to motor signals
 
-        
-    # def set_attenuation(self, T_desired, eV=None):
-    #     """
-    #     Find and set the configuration that has transmission closest (upper bound)
-    #     to `T_desired` at photon energy `eV`. 
-    #     """
-    #     if self.eV:
-    #         T_table = self.T_lookup_table
-    #     if eV:
-    #         T_table = self._create_configs(eV)
-    #     new_config = None
-    #     for i in range(1,len(T_table)):
-    #         if T_table[i-1,1] < T_desired <= T_table[i,1]:
-    #             new_config = T_table[i,0]
-    #     if not new_config:
-    #         print("Requested transmission not possible at this energy.")
-    #     else:
-    #         self._reset_blades()
-    #         self.set_config(new_config)
+

@@ -1,0 +1,247 @@
+
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:01:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:02:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:03:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:04:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:05:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:06:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:07:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:08:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:09:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:10:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:11:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:12:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:13:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:14:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:15:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:16:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:17:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:18:THICKNESS    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:01:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:02:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:03:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:04:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:05:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:06:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:07:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:08:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:09:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:10:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:11:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:12:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:13:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:14:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:15:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:16:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:17:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:FILTER:18:MATERIAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_ACTUAL    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_HIGH    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_LOW    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_DESIRED    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:T_3OMEGA    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:ENERGY    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:LOCKED    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:UNLOCK    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:MOVING    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:RUN    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:SET_MODE    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:MIRROR_IN    }
+}
+file autosave_record.tpl-req
+{
+    pattern { RECORD                 }
+            { AT2L0:XTES:SYS:CONFIG    }
+}
+
