@@ -41,14 +41,11 @@ class HXRFilter(Device):
         self.index_str = f'{index}'.zfill(2)
         self.index = index
         super().__init__(prefix, name=name, **kwargs)
-        self.constants, self._data = self.load_data(h5file) # These physical constants should not be mutable! 
+        self.constants, self._data, self._eV_min, self._eV_inc = self.load_data(h5file)
         self.Z = self.atomic_number = int(self.constants[0]) # atomic number
         self.A = self.atomic_weight = self.constants[1] # atomic weight [g]
         self.p = self.density = self.constants[2] # density [g/cm^3]
-        self.d = 1
-        self.table = self._T_table()
         self.d = self.thickness.get()
-
 
     def load_data(self, h5file):
         """
@@ -56,37 +53,24 @@ class HXRFilter(Device):
         """
         table = np.asarray(h5file['{}_table'.format(self.material.get())])
         constants = np.asarray(h5file['{}_constants'.format(self.material.get())])
-        return constants, table
+        eV_min = table[0,0]
+        eV_max = table[-1,0]
+        eV_inc = (table[-1,0] - table[0,0])/len(table[:,0])
+        return constants, table, eV_min, eV_inc
 
-    def _T_table(self):
-        """
-        Creates table of transmissions based on filter thickness `d`.
-        """
-        print('generating table for FILTER:{}...'.format(self.index_str))
-        t_table = np.zeros([self._data.shape[0],2])
-        for i in range(self._data.shape[0]):
-            t_table[i] = self._data[i,0], np.exp(-self._data[i,2]*self.d*10) 
-        self.T_table = t_table
-        print('done generating table for FILTER:{}!'.format(self.index_str))
-        return self.T_table
-    
     def _closest_eV(self, eV):
-        """
-        Return the closest photon energy from the absorption data table.
-        """
-        closest_eV = (min(self.T_table[:,0], key=lambda data_eV:abs(data_eV-eV)))
-        i = np.argwhere(self.T_table[:,0]==closest_eV).flatten()[0]
-        return closest_eV
+        i = int(np.rint((eV - self._eV_min)/self._eV_inc))
+        closest_eV = self._data[i,0]
+        return closest_eV, i
 
     def get_vals(self, eV):
         """
         Return closest photon energy to eV and its transmission.
         """
-        close_eV = self._closest_eV(eV)
-        i = np.argwhere(self.T_table[:,0]==close_eV).flatten()[0]
-        eV, T = self.T_table[i]
+        close_eV, i = self._closest_eV(eV)
+        T = np.exp(-self._data[i,2]*self.d)
         return close_eV, T
-
+    
     def transmission(self, eV):
         """
         Return beam transmission at photon energy closest ``eV``.
@@ -161,15 +145,15 @@ class HXRSatt(Device):
                 _curr_config.update({f : state})
         return config
 
-    def _calc_T(self, eV, config):
+    def _total_T(self, eV):
         """
         Calculates and returns transmission at
         photon energy `eV` given an arbitrary configuration.
         """
-        T = 1.0
-        for i in range(len(config)):
-            T*=config.get(str(i))*self.filters.get(str(i)).get_vals(eV)[1]
-        return T
+        T_arr = np.ones(self.N_filters)
+        for i in range(self.N_filters):
+            T_arr[i] = self.blade(i+1).transmission(eV)
+        return T_arr
 
     def T(self, eV=None):
         """
@@ -195,24 +179,68 @@ class AT2L0(HXRSatt):
     absorption_data = h5py.File('absorption_data.h5', 'r')
     configs = h5py.File('configs.h5', 'r')
 
-    f0 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+    f00 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
              index=1, kind='normal')
-    f1 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+    f01 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=2, kind='normal')
-    f2 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+    f02 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=3, kind='normal')
-    f3 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+    f03 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
              index=4, kind='normal')
+    f04 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+             index=5, kind='normal')
+    f05 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=6, kind='normal')
+    f06 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=7, kind='normal')
+    f07 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=8, kind='normal')
+    f08 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+             index=9, kind='normal')
+    f09 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=10, kind='normal')
+    f10 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=11, kind='normal')
+    f11 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=12, kind='normal')
+    f12 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+             index=13, kind='normal')
+    f13 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=14, kind='normal')
+    f14 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=15, kind='normal')
+    f15 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=16, kind='normal')
+    f16 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data, 
+             index=17, kind='normal')
+    f17 = FCpt(HXRFilter, '{prefix}', h5file=absorption_data,
+             index=18, kind='normal')
 
     def __init__(self, prefix, name='at2l0', **kwargs):
         self.prefix = prefix
         super().__init__(prefix, name=name, **kwargs)
         self.filters = {
-            str(self.f0.index) : self.f0,
-            str(self.f1.index) : self.f1,
-            str(self.f2.index) : self.f2,
-            str(self.f3.index) : self.f3
+            str(self.f00.index) : self.f00,
+            str(self.f01.index) : self.f01,
+            str(self.f02.index) : self.f02,
+            str(self.f03.index) : self.f03,
+            str(self.f04.index) : self.f04,
+            str(self.f05.index) : self.f05,
+            str(self.f06.index) : self.f06,
+            str(self.f07.index) : self.f07,
+            str(self.f08.index) : self.f08,
+            str(self.f09.index) : self.f09,
+            str(self.f10.index) : self.f10,
+            str(self.f11.index) : self.f11,
+            str(self.f12.index) : self.f12,
+            str(self.f13.index) : self.f13,
+            str(self.f14.index) : self.f14,
+            str(self.f15.index) : self.f15,
+            str(self.f16.index) : self.f16,
+            str(self.f17.index) : self.f17,
         }
+        self.N_filters = len(self.filters)
+        self.config_table = self._load_configs()
 #        super().startup() # this will try to connect to motor signals
 
 
