@@ -52,7 +52,7 @@ def nff_to_npy(element):
 
     """
     element = element.lower()
-    raw_data = open('CRXO/{}.nff'.format(element), 'r')
+    raw_data = open('CXRO/{}.nff'.format(element), 'r')
     data_lines = raw_data.readlines()
     npy_data = np.zeros([len(data_lines)-2,3])
     for i in range(1,len(data_lines)-1):
@@ -78,7 +78,7 @@ def eV_linear(eV_range, res=10, dec=2):
     """
     return np.around(np.linspace(eV_range[0],
                                  eV_range[1],
-                                 (eV_range[1]-eV_range[0])*res), dec)
+                                 (eV_range[1]-eV_range[0])*res+1), dec)
 
 
 def fill_data_linear(element, eV_range, res=10):
