@@ -8,7 +8,7 @@ from pcdsdevices.inout import TwinCATInOutPositioner
 logger = logging.getLogger(__name__)
 
 
-aclass HXRFilter(Device):
+class HXRFilter(Device):
     """
     A single attenuation blade.
 
@@ -29,7 +29,7 @@ aclass HXRFilter(Device):
     thickness = FCpt(EpicsSignalRO,
                      '{prefix}:FILTER:{self.index_str}:THICKNESS',
                      kind='hinted')
-    is_stuck = FCpt(EpicsSignalRO,
+    stuck = FCpt(EpicsSignalRO,
                      '{prefix}:FILTER:{self.index_str}:IS_STUCK',
                      kind='hinted')
     tab_whitelist = ['inserted', 'removed', 'insert', 'remove', 'transmission']
@@ -43,12 +43,11 @@ aclass HXRFilter(Device):
         self.index_str = f'{index}'.zfill(2)
         self.index = index
         super().__init__(prefix, name=name, **kwargs)
-        self.constants, self._data, self._eV_min, self._eV_inc = self.load_data(h5file)
+        self.constants, self._data, self._eV_min, self._eV_inc, self._eV_max = self.load_data(h5file)
         self.Z = self.atomic_number = int(self.constants[0]) # atomic number
         self.A = self.atomic_weight = self.constants[1] # atomic weight [g]
         self.p = self.density = self.constants[2] # density [g/cm^3]
         self.d = self.thickness.get()
-        self.is_stuck = self.is_stuck()
 
     def load_data(self, h5file):
         """
@@ -59,9 +58,13 @@ aclass HXRFilter(Device):
         eV_min = table[0,0]
         eV_max = table[-1,0]
         eV_inc = (table[-1,0] - table[0,0])/len(table[:,0])
-        return constants, table, eV_min, eV_inc
+        return constants, table, eV_min, eV_inc, eV_max
 
     def _closest_eV(self, eV):
+        """
+        Return the closest tabulated photon energy to ``eV``
+        and its lookup table index.
+        """
         i = int(np.rint((eV - self._eV_min)/self._eV_inc))
         closest_eV = self._data[i,0]
         return closest_eV, i
@@ -91,14 +94,20 @@ aclass HXRFilter(Device):
         True if filter is removed (out).
         """
         return self.blade.removed
-    
-    @property
+
     def is_stuck(self):
         """
         True if filter has been set as stuck.
         Unable to move.  Hopefully retracted.
         """
-        return self.is_stuck.get()
+        return self.stuck.get()
+
+    def set_stuck(self):
+        """
+        Flag the filter blade as stuck.
+        """
+        return self.stuck.put("True")
+
 
 class HXRSatt(Device):
     """
@@ -107,7 +116,7 @@ class HXRSatt(Device):
     tab_component_names = True
     tab_whitelist = []
     
-    eV = FCpt(EpicsSignalRO, '{self.eV_prefix}', kind='hinted')
+    eV = FCpt(EpicsSignalRO, "LCLS:HXR:BEAM:EV", kind='hinted')
     
     def __init__(self, prefix, eV_prefix="LCLS:HXR:BEAM:EV",
                  name='HXRSatt', **kwargs):
@@ -193,16 +202,51 @@ class HXRSatt(Device):
         photon energy ``eV`` through current filter configuration.
         """
         return np.nanprod(
-            self._all_transmissions(eV)*self._curr_config())
-
+            self._all_transmissions(eV)*self._curr_config_arr())
+        
     def eV_callback(self, value=None, **kwargs):
         """
         To be run every time the ``eV`` signal changes.
         """
         self.eV_RBV = value
-        self.transmission = self.curr_transmission(value)
+        self.curr_transmission(self.eV_RBV)
+        
+    def _find_configs(self, T_des, eV):
+        """
+        Find the optimal configurations for attaining
+        desired transmission ``T_des`` at photon
+        energy ``eV``.  
 
-    def attenuate(self):
+        Returns configurations which yield closest
+        highest and lowest transmissions and their 
+        transmission values.
+        """
+        T_set = self._all_transmissions(eV)
+        T_table = np.nanprod(T_set*self.config_table,
+                             axis=1)
+        T_config_table = np.asarray(sorted(np.transpose([T_table[:],
+                                    range(len(self.config_table))]),
+                                           key=lambda x: x[0]))
+        i = np.argmin(np.abs(T_config_table[:,0]-T_des))
+        closest = self.config_table[T_config_table[i,1]]
+        T_closest = np.nanprod(T_set*closest)
+        if T_closest == T_des:
+            config_bestHigh = config_bestLow = closest
+            T_bestHigh = T_bestLow = T_closest
+        if T_closest < T_des:
+            config_bestHigh = self.config_table[T_config_table[i+1,1]]
+            config_bestLow = closest
+            T_bestHigh = np.nanprod(T_set*config_bestHigh)
+            T_bestLow = T_closest
+        if T_closest > T_des:
+            config_bestHigh = closest
+            config_bestLow = self.config_table[T_config_table[i-1,1]]
+            T_bestHigh = T_closest
+            T_bestLow = np.nanprod(T_set*config_bestLow)
+        return config_bestLow, config_bestHigh, T_bestLow, T_bestHigh
+        
+
+    def attenuate(self):        
         pass
 
 class AT2L0(HXRSatt):
@@ -272,6 +316,9 @@ class AT2L0(HXRSatt):
         }
         self.N_filters = len(self.filters) # temporary hacks to skip motor signals
         self.config_table = self._load_configs() #
+#        self.eV_RBV = self.eV.get()
+#        self.eV.subscribe(self.eV_callback)
+
 #        super()._startup() # this will try to connect to motor signals
 
 
