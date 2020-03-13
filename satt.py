@@ -117,6 +117,33 @@ class HXRSatt(Device):
     tab_whitelist = []
     
     eV = FCpt(EpicsSignalRO, "LCLS:HXR:BEAM:EV", kind='hinted')
+
+    transmission_valid = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
+                    kind='hinted')
+    locked = FCpt(EpicsSignalRO, '{prefix}:SYS:LOCKED',
+                    kind='hinted')
+    unlock = FCpt(EpicsSignalRO, '{prefix}:SYS:UNLOCK',
+                    kind='hinted')
+    moving = FCpt(EpicsSignalRO, '{prefix}:SYS:MOVING',
+                    kind='hinted')
+    run = FCpt(EpicsSignalRO, '{prefix}:SYS:RUN',
+                    kind='hinted')
+    set_mode = FCpt(EpicsSignalRO, '{prefix}:SYS:SET_MODE',
+                    kind='hinted')
+    pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
+                    kind='hinted')
+    T_actual = FCpt(EpicsSignalRO, '{prefix}:SYS:T_ACTUAL',
+                    kind='hinted')
+    T_high = FCpt(EpicsSignalRO, '{prefix}:SYS:T_HIGH',
+                    kind='hinted')
+    T_low = FCpt(EpicsSignalRO, '{prefix}:SYS:T_LOW',
+                    kind='hinted')
+    T_des = FCpt(EpicsSignalRO, '{prefix}:SYS:T_DESIRED',
+                    kind='hinted')
+    T_3omega = FCpt(EpicsSignalRO, '{prefix}:SYS:T_3OMEGA',
+                    kind='hinted')
+#    mirror_in = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
+#                    kind='hinted')
     
     def __init__(self, prefix, eV_prefix="LCLS:HXR:BEAM:EV",
                  name='HXRSatt', **kwargs):
@@ -131,7 +158,6 @@ class HXRSatt(Device):
         self.N_filters = len(self.filters)
         self.config_arr = self._curr_config_arr()
         self.config_table = self._load_configs()
-        self.eV_RBV = eV.get()
         self.eV.subscribe(self.eV_callback)
 
     def blade(self, index):
@@ -208,8 +234,7 @@ class HXRSatt(Device):
         """
         To be run every time the ``eV`` signal changes.
         """
-        self.eV_RBV = value
-        self.curr_transmission(self.eV_RBV)
+        self.transmission = self.curr_transmission(self.eV.get())
         
     def _find_configs(self, T_des, eV):
         """
