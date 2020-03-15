@@ -22,21 +22,21 @@ B.D. Cullity, Elements of X-Ray Diffraction (Second Edition),
 Si_data = {
     'formula'      : 'Si',
     'atomic_number': 14,         # Z
-    'atomic_weight': 4.6637E-23, # grams
-    'density'      : 2.329,      # grams/cm^3
+    'atomic_weight': 28.08,      # grams
+    'density'      : 2.329E6,    # grams/m^3
 }
 C_data = {    
     'formula'      : 'C',
     'atomic_number': 6,          # Z
-    'atomic_weight': 1.9926E-23, # grams
-    'density'      : 3.51,       # grams/cm^3
+    'atomic_weight': 12.01,      # grams
+    'density'      : 3.51E6,     # grams/m^3
 }
 
 # physical constants
-r0 = 2.8719E-15   # [m]      classical electron radius
-h = 6.626176E-34  # [j s]    plancks constant
-c = 2.9979E8      # [m s^-1] Speed of light
-NA = 6.022E23     # []       Avagadros number 
+r0 = 2.81794E-15    # [m]      classical electron radius
+h = 4.135667E-15    # [eV s]    plancks constant
+c = 2.997945E8      # [m s^-1] Speed of light
+NA = 6.02240E23     # []       Avagadros number 
 
 data_dicts = [Si_data, C_data]
 
