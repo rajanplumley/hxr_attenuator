@@ -1,6 +1,7 @@
 import logging
 from ophyd.device import Device, Component as Cpt, FormattedComponent as FCpt
 from ophyd import EpicsSignal, EpicsSignalRO
+from ophyd.status import wait as status_wait
 import numpy as np
 import h5py
 from pcdsdevices.inout import TwinCATInOutPositioner
@@ -293,7 +294,7 @@ class HXRSatt(Device):
         """
         return self.T_des.put(T_des)
 
-    def attenuate(self):
+    def attenuate(self, timeout=None):
         config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
         if self.set_mode.get() == 0:
             config = config_bestLow
@@ -301,19 +302,46 @@ class HXRSatt(Device):
         if self.set_mode.get() == 1:
             config = config_bestHigh
             T = T_bestHigh
-        to_insert = []
-        to_remove = []
+        to_insert = list()
+        to_remove = list()
         for i in range(len(self.config_arr)):
             blade = self.blade(i+1)
             if not blade.is_stuck() and blade.removed() and config[i] == 1:
                 to_insert.append(i+1)
             if not blade.is_stuck() and blade.inserted() and np.isnan(config[i]):
                 to_remove.append(i+1)
+        insert_st = list()
+        in_status = None
+        remove_st = list()
+        out_status = None
+        logger.debug("Inserting blades {}".format(to_insert))
         for f in to_insert:
-            self.insert(f)
-        # WAIT FOR THESE FILTERS TO BE INSERTED BEFORE REMOVING!
+            insert_st.append(self.insert(f))
+        if len(insert_st) >= 1:
+            in_status = insert_st.pop(0)
+            for st in insert_st:
+                in_status = in_status & st
+            logger.debug("Waiting for motion to finish...")
+            status_wait(in_status, timeout=timeout)
+        if in_status:
+            inserted = in_status
+        else:
+            inserted = True
+        # TODO: if any inserted motion fails then do not remove any filters! 
+        logger.debug("Removing blades {}".format(to_remove))
         for f in to_remove:
-            self.remove(f)
+            remove_st.append(self.remove(f))
+        if len(remove_st) >= 1:
+            out_status = remove_st.pop(0)
+            for st in remove_st:
+                out_status = out_status & st
+            logger.debug("Waiting for motion to finish...")
+            status_wait(out_status, timeout=timeout)
+        if out_status:
+            removed = out_status
+        else:
+            removed = True
+        return inserted & removed 
 
 class AT2L0(HXRSatt):
 
