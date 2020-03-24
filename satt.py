@@ -19,6 +19,8 @@ class HXRFilter(Device):
     index : ``int``
     """
     _transmission = {} # TODO: this would be good to be dynamically set.
+    # It will be set by Satt using eV RBV callback
+
     # TODO: Implement an ENABLED/ALLOWED signal    
 
     blade = FCpt(TwinCATInOutPositioner,
@@ -29,7 +31,7 @@ class HXRFilter(Device):
     thickness = FCpt(EpicsSignalRO,
                      '{prefix}:FILTER:{self.index_str}:THICKNESS',
                      kind='hinted')
-    stuck = FCpt(EpicsSignalRO,
+    stuck = FCpt(EpicsSignal,
                      '{prefix}:FILTER:{self.index_str}:IS_STUCK',
                      kind='hinted')
     tab_whitelist = ['inserted', 'removed', 'insert', 'remove', 'transmission']
@@ -126,22 +128,22 @@ class HXRSatt(Device):
                     kind='hinted')
     moving = FCpt(EpicsSignalRO, '{prefix}:SYS:MOVING',
                     kind='hinted')
-    run = FCpt(EpicsSignalRO, '{prefix}:SYS:RUN',
-                    kind='hinted')
+    run = FCpt(EpicsSignalRO, '{prefix}:SYS:RUN', 
+                    kind='hinted') # not implemented
     set_mode = FCpt(EpicsSignalRO, '{prefix}:SYS:SET_MODE',
                     kind='hinted')
     pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
                     kind='hinted')
-    T_actual = FCpt(EpicsSignalRO, '{prefix}:SYS:T_ACTUAL',
-                    kind='hinted')
-    T_high = FCpt(EpicsSignalRO, '{prefix}:SYS:T_HIGH',
-                    kind='hinted')
-    T_low = FCpt(EpicsSignalRO, '{prefix}:SYS:T_LOW',
-                    kind='hinted')
-    T_des = FCpt(EpicsSignalRO, '{prefix}:SYS:T_DESIRED',
-                    kind='hinted')
-    T_3omega = FCpt(EpicsSignalRO, '{prefix}:SYS:T_3OMEGA',
-                    kind='hinted')
+    T_actual = FCpt(EpicsSignal, '{prefix}:SYS:T_ACTUAL',
+                    kind='hinted')  # not implemented
+    T_high = FCpt(EpicsSignal, '{prefix}:SYS:T_HIGH',
+                    kind='hinted')  # not implemented
+    T_low = FCpt(EpicsSignal, '{prefix}:SYS:T_LOW',
+                    kind='hinted')  # not implemented
+    T_des = FCpt(EpicsSignal, '{prefix}:SYS:T_DESIRED',
+                    kind='hinted')  # not implemented
+    T_3omega = FCpt(EpicsSignal, '{prefix}:SYS:T_3OMEGA',
+                    kind='hinted')  # not implemented
 #    mirror_in = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
 #                    kind='hinted')
     
@@ -168,37 +170,47 @@ class HXRSatt(Device):
 
     def insert(self, index):
         """
-        Insert filter at `index`.
+        Insert filter at `index` into the 'IN' position.
         """
-        inserted = self.blade(index).insert()
+        inserted = self.blade(index).blade.insert()
         self._curr_config_arr()
         return inserted
     
     def remove(self, index):
         """
-        Insert filter at `index`.
+        Retract  filter at `index` into the 'OUT' position.
         """
-        removed = self.blade(index).remove()
+        removed = self.blade(index).blade.remove()
         self._curr_config_arr()
         return removed
-    
+
     def config(self):
+        """
+        Return a dictionary of filter states indexed
+        by filter number.
+        """
         config_dict = {}
-        for x in self.config_arr:
-            if x == 1:
-                state = 'IN'
-            else:
-                state = 'OUT'
-            config_dict.update({str(i+1) : state})
-        self.config = config_dict
-        
+        for f in self.filters:
+            blade = self.filters.get(f)
+            if blade.inserted():
+                config_dict.update({ blade.index : 'IN' })
+            if blade.is_stuck():
+                config_dict.update({ blade.index : 'STUCK' })
+            if blade.removed():
+                config_dict.update({ blade.index : 'OUT' })
+            if not blade.inserted() and not blade.removed(): 
+                config_dict.update({ blade.index : 'UNKOWN' })
+        return config_dict
+            
     def _load_configs(self):
         self.config_table = self.configs['configurations']
         return self.config_table
-
+        
+    # Need a callback on every blade to grab its state and update config...
     def _curr_config_arr(self):
         """
-        Return the configuration of filter states.
+        Return the current configuration of filter states
+        as an array.
         """
         config = np.ones(self.N_filters)
         for i in range(self.N_filters):
@@ -222,13 +234,16 @@ class HXRSatt(Device):
                 T_arr[i] = self.blade(i+1).transmission(eV)
         return T_arr
 
-    def curr_transmission(self, eV):
+    def curr_transmission(self, eV=None):
         """
         Calculates and returns transmission at 
         photon energy ``eV`` through current filter configuration.
         """
-        return np.nanprod(
+        if not eV:
+            eV = self.eV.get()
+        self.transmission = np.nanprod(
             self._all_transmissions(eV)*self._curr_config_arr())
+        return self.transmission
         
     def eV_callback(self, value=None, **kwargs):
         """
@@ -236,7 +251,7 @@ class HXRSatt(Device):
         """
         self.transmission = self.curr_transmission(self.eV.get())
         
-    def _find_configs(self, T_des, eV):
+    def _find_configs(self, eV, T_des=None):
         """
         Find the optimal configurations for attaining
         desired transmission ``T_des`` at photon
@@ -246,6 +261,8 @@ class HXRSatt(Device):
         highest and lowest transmissions and their 
         transmission values.
         """
+        if not T_des:
+            T_des = self.T_des.get()
         T_set = self._all_transmissions(eV)
         T_table = np.nanprod(T_set*self.config_table,
                              axis=1)
@@ -269,10 +286,34 @@ class HXRSatt(Device):
             T_bestHigh = T_closest
             T_bestLow = np.nanprod(T_set*config_bestLow)
         return config_bestLow, config_bestHigh, T_bestLow, T_bestHigh
-        
+    
+    def transmission_desired(self, T_des):
+        """
+        Set the desired transmission.
+        """
+        return self.T_des.put(T_des)
 
-    def attenuate(self):        
-        pass
+    def attenuate(self):
+        config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
+        if self.set_mode.get() == 0:
+            config = config_bestLow
+            T = T_bestLow
+        if self.set_mode.get() == 1:
+            config = config_bestHigh
+            T = T_bestHigh
+        to_insert = []
+        to_remove = []
+        for i in range(len(self.config_arr)):
+            blade = self.blade(i+1)
+            if not blade.is_stuck() and blade.removed() and config[i] == 1:
+                to_insert.append(i+1)
+            if not blade.is_stuck() and blade.inserted() and np.isnan(config[i]):
+                to_remove.append(i+1)
+        for f in to_insert:
+            self.insert(f)
+        # WAIT FOR THESE FILTERS TO BE INSERTED BEFORE REMOVING!
+        for f in to_remove:
+            self.remove(f)
 
 class AT2L0(HXRSatt):
 
@@ -339,11 +380,11 @@ class AT2L0(HXRSatt):
             str(self.f17.index) : self.f17,
             str(self.f18.index) : self.f18,
         }
-        self.N_filters = len(self.filters) # temporary hacks to skip motor signals
-        self.config_table = self._load_configs() #
+#        self.N_filters = len(self.filters) # temporary hacks to skip motor signals
+#        self.config_table = self._load_configs() #
 #        self.eV_RBV = self.eV.get()
 #        self.eV.subscribe(self.eV_callback)
 
-#        super()._startup() # this will try to connect to motor signals
+        super()._startup() # this will try to connect to motor signals
 
 
