@@ -69,6 +69,10 @@ class HXRFilter(Device):
         and its lookup table index.
         """
         i = int(np.rint((eV - self._eV_min)/self._eV_inc))
+        if i < 0:
+            i = 0
+        if i > self._data.shape[0]:
+            i = -1
         closest_eV = self._data[i,0]
         return closest_eV, i
 
@@ -247,6 +251,7 @@ class HXRSatt(Device):
         self.transmission = np.nanprod(
             self._all_transmissions(eV)*self._curr_config_arr())
         self.T_actual.put(self.transmission)
+        self.get_3omega_transmission()
         return self.transmission
         
     def eV_callback(self, value=None, **kwargs):
@@ -259,7 +264,8 @@ class HXRSatt(Device):
         """
         To be run every time the ``T_des`` signal changes.
         """
-        config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
+        config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get(),
+                                                                                    T_des=self.T_des.get())
         self.T_high.put(T_bestHigh)
         self.T_low.put(T_bestLow)
         
@@ -298,6 +304,10 @@ class HXRSatt(Device):
             T_bestHigh = T_closest
             T_bestLow = np.nanprod(T_set*config_bestLow)
         return config_bestLow, config_bestHigh, T_bestLow, T_bestHigh
+    
+    def get_3omega_transmission(self):
+        return self.T_3omega.put(np.nanprod(
+            self._all_transmissions(3*self.eV.get())*self._curr_config_arr()))
     
     def transmission_desired(self, T_des):
         """
