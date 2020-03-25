@@ -28,13 +28,13 @@ class HXRFilter(Device):
                  '{prefix}:MMS:{self.index_str}', kind='normal')
     material = FCpt(EpicsSignalRO,
                     '{prefix}:FILTER:{self.index_str}:MATERIAL',
-                    string=True, kind='hinted')
+                    string=True, kind='normal')
     thickness = FCpt(EpicsSignalRO,
                      '{prefix}:FILTER:{self.index_str}:THICKNESS',
-                     kind='hinted')
+                     kind='normal')
     stuck = FCpt(EpicsSignal,
                      '{prefix}:FILTER:{self.index_str}:IS_STUCK',
-                     kind='hinted')
+                     kind='normal')
     tab_whitelist = ['inserted', 'removed', 'insert', 'remove', 'transmission']
     
     def __init__(self,
@@ -121,20 +121,20 @@ class HXRSatt(Device):
     
     eV = FCpt(EpicsSignalRO, "LCLS:HXR:BEAM:EV", kind='hinted')
 
-    transmission_valid = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
-                    kind='hinted')
+#    transmission_valid = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
+#                    kind='hinted')
     locked = FCpt(EpicsSignalRO, '{prefix}:SYS:LOCKED',
                     kind='hinted')
     unlock = FCpt(EpicsSignalRO, '{prefix}:SYS:UNLOCK',
                     kind='hinted')
-    moving = FCpt(EpicsSignalRO, '{prefix}:SYS:MOVING',
+#    moving = FCpt(EpicsSignalRO, '{prefix}:SYS:MOVING',
+#                    kind='hinted')
+#    run = FCpt(EpicsSignal, '{prefix}:SYS:RUN', 
+#                    kind='hinted') # not implemented
+    set_mode = FCpt(EpicsSignal, '{prefix}:SYS:SET_MODE',
                     kind='hinted')
-    run = FCpt(EpicsSignalRO, '{prefix}:SYS:RUN', 
-                    kind='hinted') # not implemented
-    set_mode = FCpt(EpicsSignalRO, '{prefix}:SYS:SET_MODE',
-                    kind='hinted')
-    pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
-                    kind='hinted')
+#    pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
+#                    kind='hinted')
     T_actual = FCpt(EpicsSignal, '{prefix}:SYS:T_ACTUAL',
                     kind='hinted')  # not implemented
     T_high = FCpt(EpicsSignal, '{prefix}:SYS:T_HIGH',
@@ -161,7 +161,9 @@ class HXRSatt(Device):
         self.N_filters = len(self.filters)
         self.config_arr = self._curr_config_arr()
         self.config_table = self._load_configs()
+        self.curr_transmission()
         self.eV.subscribe(self.eV_callback)
+        self.T_des.subscribe(self.T_des_callback)
 
     def blade(self, index):
         """
@@ -244,6 +246,7 @@ class HXRSatt(Device):
             eV = self.eV.get()
         self.transmission = np.nanprod(
             self._all_transmissions(eV)*self._curr_config_arr())
+        self.T_actual.put(self.transmission)
         return self.transmission
         
     def eV_callback(self, value=None, **kwargs):
@@ -251,6 +254,14 @@ class HXRSatt(Device):
         To be run every time the ``eV`` signal changes.
         """
         self.transmission = self.curr_transmission(self.eV.get())
+
+    def T_des_callback(self, value=None, **kwargs):
+        """
+        To be run every time the ``T_des`` signal changes.
+        """
+        config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
+        self.T_high.put(T_bestHigh)
+        self.T_low.put(T_bestLow)
         
     def _find_configs(self, eV, T_des=None):
         """
@@ -292,6 +303,9 @@ class HXRSatt(Device):
         """
         Set the desired transmission.
         """
+        config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
+        self.T_low.put(T_bestLow)
+        self.T_high.put(T_bestHigh)
         return self.T_des.put(T_des)
 
     def attenuate(self, timeout=None):
@@ -341,7 +355,9 @@ class HXRSatt(Device):
             removed = out_status
         else:
             removed = True
-        return inserted & removed 
+        self._curr_config_arr()
+        self.curr_transmission()
+#        return inserted & removed 
 
 class AT2L0(HXRSatt):
 
@@ -408,11 +424,6 @@ class AT2L0(HXRSatt):
             str(self.f17.index) : self.f17,
             str(self.f18.index) : self.f18,
         }
-#        self.N_filters = len(self.filters) # temporary hacks to skip motor signals
-#        self.config_table = self._load_configs() #
-#        self.eV_RBV = self.eV.get()
-#        self.eV.subscribe(self.eV_callback)
-
         super()._startup() # this will try to connect to motor signals
 
 
