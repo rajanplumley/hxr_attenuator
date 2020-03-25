@@ -22,8 +22,6 @@ class HXRFilter(Device):
     _transmission = {} # TODO: this would be good to be dynamically set.
     # It will be set by Satt using eV RBV callback
 
-    # TODO: Implement an ENABLED/ALLOWED signal    
-
     blade = FCpt(TwinCATInOutPositioner,
                  '{prefix}:MMS:{self.index_str}', kind='normal')
     material = FCpt(EpicsSignalRO,
@@ -125,32 +123,32 @@ class HXRSatt(Device):
     
     eV = FCpt(EpicsSignalRO, "LCLS:HXR:BEAM:EV", kind='hinted')
 
+    locked = FCpt(EpicsSignalRO, '{prefix}:SYS:LOCKED',
+                    kind='hinted') # lock the system (all motion)
+    unlock = FCpt(EpicsSignalRO, '{prefix}:SYS:UNLOCK',
+                    kind='hinted') # unlock the system
+    set_mode = FCpt(EpicsSignal, '{prefix}:SYS:SET_MODE',
+                    kind='hinted') # select best lowest or highest
+    T_actual = FCpt(EpicsSignal, '{prefix}:SYS:T_ACTUAL',
+                    kind='hinted') # current transmission
+    T_high = FCpt(EpicsSignal, '{prefix}:SYS:T_HIGH',
+                    kind='hinted') # closest achievable high
+    T_low = FCpt(EpicsSignal, '{prefix}:SYS:T_LOW',
+                    kind='hinted') # closest achievable low
+    T_des = FCpt(EpicsSignal, '{prefix}:SYS:T_DESIRED',
+                    kind='hinted')
+    T_3omega = FCpt(EpicsSignal, '{prefix}:SYS:T_3OMEGA',
+                    kind='hinted')
+#    mirror_in = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
+#                    kind='hinted')
 #    transmission_valid = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
 #                    kind='hinted')
-    locked = FCpt(EpicsSignalRO, '{prefix}:SYS:LOCKED',
-                    kind='hinted')
-    unlock = FCpt(EpicsSignalRO, '{prefix}:SYS:UNLOCK',
-                    kind='hinted')
+#    pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
+#                    kind='hinted') # not implemented
 #    moving = FCpt(EpicsSignalRO, '{prefix}:SYS:MOVING',
 #                    kind='hinted')
 #    run = FCpt(EpicsSignal, '{prefix}:SYS:RUN', 
 #                    kind='hinted') # not implemented
-    set_mode = FCpt(EpicsSignal, '{prefix}:SYS:SET_MODE',
-                    kind='hinted')
-#    pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
-#                    kind='hinted')
-    T_actual = FCpt(EpicsSignal, '{prefix}:SYS:T_ACTUAL',
-                    kind='hinted')  # not implemented
-    T_high = FCpt(EpicsSignal, '{prefix}:SYS:T_HIGH',
-                    kind='hinted')  # not implemented
-    T_low = FCpt(EpicsSignal, '{prefix}:SYS:T_LOW',
-                    kind='hinted')  # not implemented
-    T_des = FCpt(EpicsSignal, '{prefix}:SYS:T_DESIRED',
-                    kind='hinted')  # not implemented
-    T_3omega = FCpt(EpicsSignal, '{prefix}:SYS:T_3OMEGA',
-                    kind='hinted')  # not implemented
-#    mirror_in = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
-#                    kind='hinted')
     
     def __init__(self, prefix, eV_prefix="LCLS:HXR:BEAM:EV",
                  name='HXRSatt', **kwargs):
@@ -201,12 +199,12 @@ class HXRSatt(Device):
             blade = self.filters.get(f)
             if blade.inserted():
                 config_dict.update({ blade.index : 'IN' })
-            if blade.is_stuck():
-                config_dict.update({ blade.index : 'STUCK' })
             if blade.removed():
                 config_dict.update({ blade.index : 'OUT' })
             if not blade.inserted() and not blade.removed(): 
                 config_dict.update({ blade.index : 'UNKOWN' })
+            if blade.is_stuck():
+                config_dict.update({ blade.index : 'STUCK' })
         return config_dict
             
     def _load_configs(self):
@@ -350,7 +348,7 @@ class HXRSatt(Device):
         if in_status:
             inserted = in_status
         else:
-            inserted = True
+            inserted = True # Not correct, this should be a status object.
         # TODO: if any inserted motion fails then do not remove any filters! 
         logger.debug("Removing blades {}".format(to_remove))
         for f in to_remove:
@@ -434,6 +432,6 @@ class AT2L0(HXRSatt):
             str(self.f17.index) : self.f17,
             str(self.f18.index) : self.f18,
         }
-        super()._startup() # this will try to connect to motor signals
+        super()._startup()
 
 
