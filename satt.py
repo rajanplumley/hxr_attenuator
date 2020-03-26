@@ -64,19 +64,21 @@ class HXRFilter(Device):
     def _closest_eV(self, eV):
         """
         Return the closest tabulated photon energy to ``eV``
-        and its lookup table index.
+        and its lookup table index.  If ``eV`` is outside
+        the range of the table, the function will return
+        either the lowest or highest value available.
         """
         i = int(np.rint((eV - self._eV_min)/self._eV_inc))
-        if i < 0:
-            i = 0
+        if i < 0: 
+            i = 0 # Use lowest tabulated value.
         if i > self._data.shape[0]:
-            i = -1
+            i = -1 # Use greatest tabulated value.
         closest_eV = self._data[i,0]
         return closest_eV, i
 
     def get_vals(self, eV):
         """
-        Return closest photon energy to eV and its transmission.
+        Return closest photon energy to ``eV`` and its transmission.
         """
         close_eV, i = self._closest_eV(eV)
         T = np.exp(-self._data[i,2]*self.d)
@@ -90,13 +92,13 @@ class HXRFilter(Device):
 
     def inserted(self):
         """
-        True if filter is inserted (in).
+        True if filter is inserted ('IN').
         """
         return self.blade.inserted
 
     def removed(self):
         """
-        True if filter is removed (out).
+        True if filter is removed ('OUT').
         """
         return self.blade.removed
 
@@ -116,6 +118,7 @@ class HXRFilter(Device):
 
 class HXRSatt(Device):
     """
+    LCLS II Hard X-ray solid attenuator system.
     """
     cbid = None
     tab_component_names = True
@@ -208,6 +211,9 @@ class HXRSatt(Device):
         return config_dict
             
     def _load_configs(self):
+        """
+        Load the HDF5 table of possible configurations.
+        """
         self.config_table = self.configs['configurations']
         return self.config_table
         
@@ -304,6 +310,10 @@ class HXRSatt(Device):
         return config_bestLow, config_bestHigh, T_bestLow, T_bestHigh
     
     def get_3omega_transmission(self):
+        """
+        Calculates 3rd harmonic transmission through the current
+        configuration and sets the ``T_3omega`` attribute.
+        """
         return self.T_3omega.put(np.nanprod(
             self._all_transmissions(3*self.eV.get())*self._curr_config_arr()))
     
@@ -317,6 +327,11 @@ class HXRSatt(Device):
         return self.T_des.put(T_des)
 
     def attenuate(self, timeout=None):
+        """
+        Will execute the filter selection procedure and
+        move the necessary filters into the beam in order
+        to achieve the closest transmission to ``T_des``.
+        """
         config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
         if self.set_mode.get() == 0:
             config = config_bestLow
