@@ -205,7 +205,7 @@ class HXRSatt(Device):
             if blade.removed():
                 config_dict.update({ blade.index : 'OUT' })
             if not blade.inserted() and not blade.removed(): 
-                config_dict.update({ blade.index : 'UNKOWN' })
+                config_dict.update({ blade.index : 'UKNOWN' })
             if blade.is_stuck():
                 config_dict.update({ blade.index : 'STUCK' })
         return config_dict
