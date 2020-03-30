@@ -39,8 +39,9 @@ import typhos
 
 
 import satt
-satt = satt.AT2L0('AT2L0:SIM')
+print(satt.__file__)
+att = satt.AT2L0('AT2L0:SIM')
 app = QApplication.instance() or QApplication(sys.argv)
-suite = typhos.TyphosSuite.from_device(satt)
+suite = typhos.TyphosSuite.from_device(att)
 suite.show()
 app.exec_()
