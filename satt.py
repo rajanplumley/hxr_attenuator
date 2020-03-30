@@ -121,6 +121,7 @@ class HXRSatt(Device):
     LCLS II Hard X-ray solid attenuator system.
     """
     cbid = None
+    retries = 3
     tab_component_names = True
     tab_whitelist = []
     
@@ -142,17 +143,16 @@ class HXRSatt(Device):
                     kind='hinted')
     T_3omega = FCpt(EpicsSignal, '{prefix}:SYS:T_3OMEGA',
                     kind='hinted')
+    run = FCpt(EpicsSignal, '{prefix}:SYS:RUN', 
+                    kind='hinted')
+    running = FCpt(EpicsSignal, '{prefix}:SYS:MOVING',
+                    kind='hinted')
 #    mirror_in = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
 #                    kind='hinted')
 #    transmission_valid = FCpt(EpicsSignalRO, '{prefix}:SYS:T_VALID',
 #                    kind='hinted')
 #    pv_config = FCpt(EpicsSignalRO, '{prefix}:SYS:CONFIG',
 #                    kind='hinted') # not implemented
-#    moving = FCpt(EpicsSignalRO, '{prefix}:SYS:MOVING',
-#                    kind='hinted')
-#    run = FCpt(EpicsSignal, '{prefix}:SYS:RUN', 
-#                    kind='hinted') # not implemented
-    
     def __init__(self, prefix, eV_prefix="LCLS:HXR:BEAM:EV",
                  name='HXRSatt', **kwargs):
         super().__init__(prefix, name=name, **kwargs)
@@ -167,8 +167,9 @@ class HXRSatt(Device):
         self.config_arr = self._curr_config_arr()
         self.config_table = self._load_configs()
         self.curr_transmission()
-        self.eV.subscribe(self.eV_callback)
-        self.T_des.subscribe(self.T_des_callback)
+        self.eV.subscribe(self._eV_callback)
+        self.T_des.subscribe(self._T_des_callback)
+        self.run.subscribe(self._run_callback)
 
     def blade(self, index):
         """
@@ -250,6 +251,7 @@ class HXRSatt(Device):
         Calculates and returns transmission at 
         photon energy ``eV`` through current filter configuration.
         """
+        print("updating transmission")
         if not eV:
             eV = self.eV.get()
         self.transmission = np.nanprod(
@@ -257,14 +259,14 @@ class HXRSatt(Device):
         self.T_actual.put(self.transmission)
         self.get_3omega_transmission()
         return self.transmission
-        
-    def eV_callback(self, value=None, **kwargs):
+
+    def _eV_callback(self, value=None, **kwargs):
         """
         To be run every time the ``eV`` signal changes.
         """
         self.transmission = self.curr_transmission(self.eV.get())
 
-    def T_des_callback(self, value=None, **kwargs):
+    def _T_des_callback(self, value=None, **kwargs):
         """
         To be run every time the ``T_des`` signal changes.
         """
@@ -272,7 +274,22 @@ class HXRSatt(Device):
                                                                                     T_des=self.T_des.get())
         self.T_high.put(T_bestHigh)
         self.T_low.put(T_bestLow)
-        
+
+    def _run_callback(self, old_value=None, value=None, **kwargs):
+        """
+        To be run every time the ``run`` sgianl changes.
+        """
+        if old_value == 0 and self.running.get() == 0 and value == 1:
+            print("run value changed to 1, attenuating")
+            self.attenuate()
+            for i in range(self.retries):
+                try:
+                    print("returning run to 0")
+                    self.run.put(0)
+                except Exception:
+                    print("could not set run to 0")
+                    pass
+
     def _find_configs(self, eV, T_des=None):
         """
         Find the optimal configurations for attaining
@@ -332,6 +349,8 @@ class HXRSatt(Device):
         move the necessary filters into the beam in order
         to achieve the closest transmission to ``T_des``.
         """
+        print("setting running to high")
+        self.running.put(1)
         config_bestLow, config_bestHigh, T_bestLow, T_bestHigh = self._find_configs(self.eV.get())
         if self.set_mode.get() == 0:
             config = config_bestLow
@@ -351,21 +370,26 @@ class HXRSatt(Device):
         in_status = None
         remove_st = list()
         out_status = None
-        logger.debug("Inserting blades {}".format(to_insert))
+    #        logger.debug("Inserting blades {}".format(to_insert))
+        print("inserting blades")
         for f in to_insert:
             insert_st.append(self.insert(f))
-        if len(insert_st) >= 1:
-            in_status = insert_st.pop(0)
-            for st in insert_st:
-                in_status = in_status & st
+        for st in insert_st:
+            print("waiting on insert status", st)
+            status_wait(st, timeout=timeout)
+        # if len(insert_st) >= 1:
+        #     in_status = insert_st.pop(0)
+        #     for st in insert_st:
+        #         in_status = in_status & st
             logger.debug("Waiting for motion to finish...")
-            status_wait(in_status, timeout=timeout)
+#            status_wait(in_status, timeout=timeout)
         if in_status:
             inserted = in_status
         else:
             inserted = True # Not correct, this should be a status object.
         # TODO: if any inserted motion fails then do not remove any filters! 
-        logger.debug("Removing blades {}".format(to_remove))
+#        logger.debug("Removing blades {}".format(to_remove))
+        print("removing blades")
         for f in to_remove:
             remove_st.append(self.remove(f))
         if len(remove_st) >= 1:
@@ -380,6 +404,8 @@ class HXRSatt(Device):
             removed = True
         self._curr_config_arr()
         self.curr_transmission()
+        print("resetting running to 0")
+        self.running.put(0)
 #        return inserted & removed 
 
 class AT2L0(HXRSatt):
