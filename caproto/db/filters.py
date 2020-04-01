@@ -13,11 +13,13 @@ class FilterGroup(PVGroup):
                            lower_alarm_limit=0.0,
                            doc='Filter thickness',
                            units='m')
+
     material = pvproperty(value='Si',
                           name='MATERIAL',
                           mock_record='stringin',
                           doc='Filter material',
                           dtype=ChannelType.STRING)
+
     is_stuck = pvproperty(value='False',
                           name='IS_STUCK',
                           mock_record='bo',
