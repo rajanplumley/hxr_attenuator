@@ -2,3 +2,7 @@ HISTORY/*
 *.h5
 .ipynb_checkpoints/*
 pvNotepad/build/*
+*.pyc
+__pycache__
+caproto/__pycache__
+caproto/db/__pycache__
