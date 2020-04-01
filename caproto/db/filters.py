@@ -30,3 +30,15 @@ class FilterGroup(PVGroup):
     def __init__(self, prefix, *, ioc, **kwargs):
         super().__init__(prefix, **kwargs)
         self.ioc = ioc
+
+    @thickness.putter
+    async def thickness(self, instance, value):
+        if value < 0:
+          raise ValueError('Thickness must be '
+                           +'a positive number')
+    
+    @material.putter
+    async def material(self, instance, value):
+        if value.lower() not in ['si','c']:
+            raise ValueError('{} is not an available '
+                             +'material'.format(value))
