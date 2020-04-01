@@ -22,13 +22,11 @@ def write_h5(config_table):
  
     Parameters:
        config_table : ``NumPy Array``
-
     """
     h5 = h5py.File('configs.h5', 'w')
     configs = h5.create_dataset('configurations', (len(config_table),N,), dtype='f')
     configs[:] = config_table[:]
     h5.close()
-
 
 if __name__ == '__main__':
     if kind == 'inout':
