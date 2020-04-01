@@ -67,3 +67,29 @@ class SystemGroup(PVGroup):
     def __init__(self, prefix, *, ioc, **kwargs):
         super().__init__(prefix, **kwargs)
         self.ioc = ioc
+
+    @t_actual.putter
+    async def t_actual(self, instance, value):
+        transmission_value_error(value)
+
+    @t_desired.putter
+    async def t_desired(self, instance, value):
+        transmission_value_error(value)
+
+    @t_low.putter
+    async def t_low(self, instance, value):
+        transmission_value_error(value)
+
+    @t_high.putter
+    async def t_high(self, instance, value):
+        transmission_value_error(value)
+
+    @t_3omega.putter
+    async def t_3omega(self, instance, value):
+        transmission_value_error(value)
+
+
+def transmission_value_error(value):
+    if value < 0 or value > 1:
+        raise ValueError('Transmission must be '
+                         +'between 0 and 1.')
